@@ -35,43 +35,46 @@ export function printIntrospectionSchema(schema: GraphQLSchema): string {
 }
 
 export function printFineSchema(schema: GraphQLSchema): string {
-  const typeMap = schema.getTypeMap();
 
-
-  const rootQuery=schema.getQueryType();
-  const definedTypeNames=Object.keys(typeMap).filter(isDefinedType);
-  console.log(definedTypeNames);
-  const typeNamesMap=arrayToMap(definedTypeNames,99999);
-
-  let {unLeveledNamesMap,leveledNamesMap} = levelTypeNames(rootQuery.name,typeNamesMap,typeMap);
-
-  console.log(leveledNamesMap);
-  console.log(unLeveledNamesMap);
-
-  let orderedNames = getOrderedNames(leveledNamesMap);
-
-  const rootMutation=schema.getMutationType();
-  if(rootMutation){
-    let {unLeveledNamesMap:unleveledMuatationNameMaps,leveledNamesMap:leveledMuatationNameMaps}
-      = levelTypeNames(rootMutation.name,unLeveledNamesMap,typeMap);
-    let orderedMuNames=getOrderedNames(leveledMuatationNameMaps);
-    orderedNames=[...orderedNames,...orderedMuNames];
-    unLeveledNamesMap = unleveledMuatationNameMaps;
-  }
-
-  let theNamesIDontKnown = getOrderedNames(unLeveledNamesMap);
-  if(theNamesIDontKnown.length>0){
-    console.log(`these names are unOrdered ${theNamesIDontKnown},maybe they dont be uesd by other types`);
-    orderedNames=[...theNamesIDontKnown,...orderedNames];
-  }
+  let orderedNames =getOrderedNamesBySchema(schema);
 
   console.log(orderedNames);
+
+  const typeMap = schema.getTypeMap();
   let types =orderedNames.map(orderedName => typeMap[orderedName]);
   return types.map(printType).join('\n\n') + '\n';
 
 }
 
-function getOrderedNames(leveledNamesMap){
+function getOrderedNamesBySchema(schema){
+  const typeMap = schema.getTypeMap();
+  const rootQuery=schema.getQueryType();
+  const definedTypeNames=Object.keys(typeMap).filter(isDefinedType);
+
+  const typeNamesMap=arrayToMap(definedTypeNames,99999);
+
+  let {unLeveledNamesMap,leveledNamesMap} = levelTypeNames(rootQuery.name,typeNamesMap,typeMap);
+
+  let orderedNames = getOrderedNamesFromMap(leveledNamesMap);
+
+  const rootMutation=schema.getMutationType();
+  if(rootMutation){
+    let {unLeveledNamesMap:unleveledMuatationNameMaps,leveledNamesMap:leveledMuatationNameMaps}
+      = levelTypeNames(rootMutation.name,unLeveledNamesMap,typeMap);
+    let orderedMuNames=getOrderedNamesFromMap(leveledMuatationNameMaps);
+    orderedNames=[...orderedNames,...orderedMuNames];
+    unLeveledNamesMap = unleveledMuatationNameMaps;
+  }
+
+  let theNamesIDontKnown = getOrderedNamesFromMap(unLeveledNamesMap);
+  if(theNamesIDontKnown.length>0){
+    console.log(`these names are unOrdered ${theNamesIDontKnown},maybe they dont be uesd by other types`);
+    orderedNames=[...theNamesIDontKnown,...orderedNames];
+  }
+  return orderedNames;
+}
+
+function getOrderedNamesFromMap(leveledNamesMap){
   let levelToNamesMap =  flipMap(leveledNamesMap);
   let nameLevels = [...levelToNamesMap.keys()];
   nameLevels.sort((pre,next)=>(pre<=next));
