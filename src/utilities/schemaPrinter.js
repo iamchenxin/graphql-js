@@ -43,7 +43,6 @@ export function printFineSchema(schema: GraphQLSchema): string {
   console.log(definedTypeNames);
   const typeNamesMap=arrayToMap(definedTypeNames,99999);
 
-  debugger;
   let {unLeveledNamesMap,leveledNamesMap} = levelTypeNames(rootQuery.name,typeNamesMap,typeMap);
 
   console.log(leveledNamesMap);
@@ -67,6 +66,8 @@ export function printFineSchema(schema: GraphQLSchema): string {
   }
 
   console.log(orderedNames);
+  let types =orderedNames.map(orderedName => typeMap[orderedName]);
+  return types.map(printType).join('\n\n') + '\n';
 
 }
 
@@ -76,10 +77,10 @@ function getOrderedNames(leveledNamesMap){
   nameLevels.sort((pre,next)=>(pre<=next));
   let orderedNames=[];
   for(let level of nameLevels){
-    console.log(orderedNames);
-    orderedNames=[...orderedNames,...levelToNamesMap.get(level)];
+    let levelNames = levelToNamesMap.get(level);
+    levelNames.sort();// sort the same level names . to get a certainly order.
+    orderedNames=[...orderedNames,...levelNames];
   }
-  console.log(orderedNames);
   return orderedNames;
 }
 
@@ -92,103 +93,61 @@ function levelTypeNames(rootName,_unLeveledNamesMap,typeMap){
 
   function _levelTypeNames(thisName,parentName,childLevel){
     let childrenNames=getRefedTypes(typeMap[thisName]);
-    if(childrenNames==null)return;
     for(let childName of childrenNames){
       if(childName==parentName||thisName==childName){
         continue;//skip cross reference and self reference
       }else if(leveledNamesMap.has(childName)) {
-        // console.log(`orderedNamesMap[${childName}] = ${orderedNamesMap[childName]} ,${typeof childName}`);
-
         leveledNamesMap.set(childName,childLevel);
         _levelTypeNames(childName,thisName,childLevel+1);
       }else if(unLeveledNamesMap.has(childName)){
-
-        //  console.log(`  unOrderedNamesMap set ${childName} = ${childLevel} , ${typeof childName}`);
         leveledNamesMap.set(childName,childLevel);
         unLeveledNamesMap.delete(childName);
         _levelTypeNames(childName,thisName,childLevel+1);
       }else{
         throw Error(`printFineSchema.orderNames: Unkown type [${name}]`);
       }
-
     }
   }
   return {unLeveledNamesMap,leveledNamesMap};
 }
 
 
-
+// always return an array ,if get none,just return []
 // a type or interface ref from (args and resolve) of fields and interface of a type
 function getRefedTypes(type){
+  let refedTypeNames=[];
   if(!isDefinedType(type.name)){ //only check
-    return null;
+    return refedTypeNames;
   }else {
-    console.log(`....... ${type.name} .....`);
     if( !(type.getFields instanceof Function)){
       // if hasn't `getFields` ,it must not be a class GraphQLObjectType or GraphQLInterfaceType
       // as now,the only types will ref another definedType inside are GraphQLObjectType and GraphQLInterfaceType
       // GraphQLEnumType has no fields
-//    console.log(`....... ${type.name} .....`);
-      return null;
+      return refedTypeNames;
     }
   }
+
   const fields=type.getFields();
-  let refedTypeNames=[];
+  // 1/2 get refed type name from fields
   Object.keys(fields).map(fieldKey=>fields[fieldKey])
     .filter(field=>isDefinedType(getTypeName(field.type) ) )
     .map(field=>{
-
       refedTypeNames=refedTypeNames.concat(
-        // args type name
-        field.args.map(arg=>getDefinedTypeNameByType(arg.type)).filter(value=>value instanceof String),
+        // 1 get type name from args of a field
+        field.args.map(arg=>getDefinedTypeNameByType(arg.type)).filter(value=>value instanceof String) ,
+        // 2 get type name from field itself
         getDefinedTypeNameByType(field.type)|| []
       );
-      console.log(`field=${field.type.name||field.type.ofType},refedTypeNames=${refedTypeNames}`);
     });
-  /*
-  for(let fieldKey of Object.keys(fields)){
-    let field=fields[fieldKey];
-    refedTypeNames=refedTypeNames.concat(
-      // args type name
-      field.args.map(arg=>getDefinedTypeNameByType(arg.type)).filter(value=>value instanceof String),
-      getDefinedTypeNameByType(field.type)|| []
-    );// the type of field itself
-    */
-    //console.log(`fieldKey=${fieldKey},refedTypeNames=${refedTypeNames}`);
-    /*
-    for (let arg of field.args){
-      let typeName=getDefinedTypeNameByType(arg.type);
-      if(typeName){
-        refedTypeNames.push(typeName);
-      }
-    }
-    // the type of field itself
-    let fieldTypeName=getDefinedTypeNameByType(field.type);
-    if(fieldTypeName){
-      refedTypeNames.push(fieldTypeName);
-    }
-    */
 
-
+  // 3 get type name from interfaces of the type itself
   if(type.getInterfaces instanceof Function){
     for(let interfaceType of type.getInterfaces()){
-      console.log(`!!get a interface !${interfaceType.name}`);
       refedTypeNames.push(interfaceType.name);
     }
   }
   return refedTypeNames;
-/*
-  let refedTypes=Object.keys(fields).map(key=>{
-    let field=fields[key];
-    let typeNames=field.args.map(arg=>{
-      let typeName = getDefinedTypeByTypeObj(arg.type);
-      return typeName;
-    });
-    typeNames.push(getDefinedTypeByTypeObj(field.type));
-    return typeNames;
-  })
-  return refedTypes;
-  */
+
 }
 
 function arrayToMap(_array,defaultValue){
