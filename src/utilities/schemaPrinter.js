@@ -87,46 +87,38 @@ function getOrderedNamesFromMap(leveledNamesMap){
   return orderedNames;
 }
 
-function levelTypeNames(rootName,_unLeveledNamesMap,typeMap){
-  let unLeveledNamesMap = new Map(_unLeveledNamesMap);
+// calculate level values for each type names by their reference to each other
+function levelTypeNames(rootName,namesMapToBeLeveled,typeMap){
+  let unLeveledNamesMap = new Map(namesMapToBeLeveled);
   let leveledNamesMap= new Map();
+  let circleRef=new Map();// use a map to watch circle ref,Depth-first search
+
   unLeveledNamesMap.delete(rootName);
   leveledNamesMap.set(rootName,0);
-  let circleRef=new Map();
-
-
-  _levelTypeNames(rootName,null,1);
-
-
-  function _levelTypeNames(thisName,parentName,childLevel){
+  _levelTypeNames(rootName,1);
+  function _levelTypeNames(thisName,childLevel){
     let childrenNames=getRefedTypes(typeMap[thisName]);
     for(let childName of childrenNames){
-      if(childName==parentName||thisName==childName){
-        continue;//skip cross reference and self reference
-      }else{
-        if(unLeveledNamesMap.has(childName)){
-          leveledNamesMap.set(childName,childLevel);
-          unLeveledNamesMap.delete(childName);
-          _levelTypeNames(childName,thisName,childLevel+1);
-        } else if(leveledNamesMap.has(childName)) {
-          leveledNamesMap.set(childName,childLevel);
-          _levelTypeNames(childName,thisName,childLevel+1);
-
-          if(circleRef.get(childName)){
-            console.log(`circle .${parentName}. [${thisName}] .${childName} -----${childLevel}--------------------------`);
-            console.log(circleRef);
-          //  circleRef=new Map();
-            return;
-          }
-          circleRef.set(childName,childLevel);
-        }else{
-          throw Error(`printFineSchema.orderNames: Unkown type [${name}]`);
-        }
-
+      if(// meet a circle ref,skip
+        circleRef.get(childName) ||
+        // this type is not belong to current process,skip
+        namesMapToBeLeveled.get(childName)==null ||
+        //  if [the level of leveled Name] >= [current level]  ,must skip,level is always up~ no downgrade
+        (leveledNamesMap.has(childName)&& leveledNamesMap.get(childName)>=childLevel)
+      ){
+        continue;
       }
+      circleRef.set(childName,childLevel);
 
+      leveledNamesMap.set(childName,childLevel);
+      unLeveledNamesMap.delete(childName);
+      _levelTypeNames(childName,childLevel+1);
+
+      circleRef.delete(childName);
     }
   }
+
+
   return {unLeveledNamesMap,leveledNamesMap};
 }
 
@@ -170,9 +162,10 @@ function getRefedTypes(type){
 }
 
 function arrayToMap(_array,defaultValue){
-  let _map = new Map();
+  var _map = new Map();
   for (let v of _array){
     _map.set(v,defaultValue);
+    console.log(`${v},${_map.get(v)}`);
   }
   return _map;
 }
@@ -192,12 +185,12 @@ function flipMap(_srcMap){
 function getTypeName(type){
   let name=type.name;
   if(name==null){
-    if(type instanceof GraphQLNonNull ||
-      type instanceof GraphQLList ){
+    let typeString = type.constructor.name;
+    if(typeString == 'GraphQLNonNull' || typeString == 'GraphQLList' ){
       name=type.ofType.name;
     }
     if(name==null){ // still can not get name, so this type is something i dont kown ,throw to learn
-      throw new Error(`Unknown type its javascript class is [${type.constructor.name}]`);
+      throw new Error(`Unknown type its javascript class is[ [${type.constructor.name}] ${type.ofType.constructor.name}]`);
     }
   }
   return name;

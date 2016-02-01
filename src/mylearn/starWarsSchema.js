@@ -15,6 +15,7 @@ import {
   GraphQLNonNull,
   GraphQLSchema,
   GraphQLString,
+  GraphQLInputObjectType,
 } from '../type/index.js';
 
 import { getFriends, getHero, getHuman, getDroid } from './starWarsData.js';
@@ -224,12 +225,30 @@ const droidType = new GraphQLObjectType({
   interfaces: [ characterInterface ]
 });
 
+const myInput = new GraphQLInputObjectType({
+  name:'MyInput',
+  fields:{
+    in2:{
+      type:GraphQLString
+    }
+  }
+});
+
 const myCircleType = new GraphQLObjectType({
   name:'MyCircle',
   fields:()=>({
     toDroid:{
       type:new GraphQLList(droidType),
       resolve: droid => getFriends(droid),
+    },
+    toHuman:{
+      type:new GraphQLList(humanType),
+      args:{
+        myIn:{
+          type:myInput
+        }
+      },
+      resolve:_this=>getFriends(),
     },
   }),
 });
