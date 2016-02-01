@@ -145,7 +145,8 @@ function getRefedTypes(type){
     .map(field=>{
       refedTypeNames=refedTypeNames.concat(
         // 1 get type name from args of a field
-        field.args.map(arg=>getDefinedTypeNameByType(arg.type)).filter(value=>value instanceof String) ,
+        // in javascript, can not use instanceof to check a String type! must use typeof!
+        field.args.map(arg=>getDefinedTypeNameByType(arg.type)).filter(value=>(typeof value == 'string')) ,
         // 2 get type name from field itself
         getDefinedTypeNameByType(field.type)|| []
       );
