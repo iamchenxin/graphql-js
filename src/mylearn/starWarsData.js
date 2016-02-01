@@ -120,3 +120,7 @@ export function getHuman(id) {
 export function getDroid(id) {
   return droidData[id];
 }
+
+export function getCircle(){
+
+}

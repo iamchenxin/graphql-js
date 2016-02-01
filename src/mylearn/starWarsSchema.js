@@ -142,6 +142,8 @@ const characterInterface = new GraphQLInterfaceType({
  *     appearsIn: [Episode]
  *   }
  */
+
+
 const humanType = new GraphQLObjectType({
   name: 'Human',
   description: 'A humanoid creature in the Star Wars universe.',
@@ -168,6 +170,10 @@ const humanType = new GraphQLObjectType({
       type: GraphQLString,
       description: 'The home planet of the human, or null if unknown.',
     },
+    toMyCircle:{
+      type: myCircleType,
+      resolve: circle=>getCircle(),
+    }
   }),
   interfaces: [ characterInterface ]
 });
@@ -210,8 +216,22 @@ const droidType = new GraphQLObjectType({
       type: GraphQLString,
       description: 'The primary function of the droid.',
     },
+    toHuman:{
+      type:humanType,
+      resolve: human=>getCircle(),
+    }
   }),
   interfaces: [ characterInterface ]
+});
+
+const myCircleType = new GraphQLObjectType({
+  name:'MyCircle',
+  fields:()=>({
+    toDroid:{
+      type:new GraphQLList(droidType),
+      resolve: droid => getFriends(droid),
+    },
+  }),
 });
 
 /**

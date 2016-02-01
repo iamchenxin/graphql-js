@@ -54,7 +54,7 @@ function getOrderedNamesBySchema(schema){
   const typeNamesMap=arrayToMap(definedTypeNames,99999);
 
   let {unLeveledNamesMap,leveledNamesMap} = levelTypeNames(rootQuery.name,typeNamesMap,typeMap);
-
+  console.log(leveledNamesMap);
   let orderedNames = getOrderedNamesFromMap(leveledNamesMap);
 
   const rootMutation=schema.getMutationType();
@@ -92,23 +92,39 @@ function levelTypeNames(rootName,_unLeveledNamesMap,typeMap){
   let leveledNamesMap= new Map();
   unLeveledNamesMap.delete(rootName);
   leveledNamesMap.set(rootName,0);
+  let circleRef=new Map();
+
+
   _levelTypeNames(rootName,null,1);
+
 
   function _levelTypeNames(thisName,parentName,childLevel){
     let childrenNames=getRefedTypes(typeMap[thisName]);
     for(let childName of childrenNames){
       if(childName==parentName||thisName==childName){
         continue;//skip cross reference and self reference
-      }else if(leveledNamesMap.has(childName)) {
-        leveledNamesMap.set(childName,childLevel);
-        _levelTypeNames(childName,thisName,childLevel+1);
-      }else if(unLeveledNamesMap.has(childName)){
-        leveledNamesMap.set(childName,childLevel);
-        unLeveledNamesMap.delete(childName);
-        _levelTypeNames(childName,thisName,childLevel+1);
       }else{
-        throw Error(`printFineSchema.orderNames: Unkown type [${name}]`);
+        if(unLeveledNamesMap.has(childName)){
+          leveledNamesMap.set(childName,childLevel);
+          unLeveledNamesMap.delete(childName);
+          _levelTypeNames(childName,thisName,childLevel+1);
+        } else if(leveledNamesMap.has(childName)) {
+          leveledNamesMap.set(childName,childLevel);
+          _levelTypeNames(childName,thisName,childLevel+1);
+
+          if(circleRef.get(childName)){
+            console.log(`circle .${parentName}. [${thisName}] .${childName} -----${childLevel}--------------------------`);
+            console.log(circleRef);
+          //  circleRef=new Map();
+            return;
+          }
+          circleRef.set(childName,childLevel);
+        }else{
+          throw Error(`printFineSchema.orderNames: Unkown type [${name}]`);
+        }
+
       }
+
     }
   }
   return {unLeveledNamesMap,leveledNamesMap};
