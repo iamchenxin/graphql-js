@@ -303,18 +303,16 @@ function flipMap(_srcMap:Map<string,number>):Map<number,Array<string>> {
 }
 
 function getTypeName(type:any):string {
+  const typeString = type.constructor.name;
   let name = type.name;
-  if (name === undefined) {
-    const typeString = type.constructor.name;
-    if (typeString === 'GraphQLNonNull' || typeString === 'GraphQLList' ) {
-      name = type.ofType.name;
-    }
-    if (name === undefined) {
-      // if still can not get name,
-      // this type must be something i dont known ,throw to learn
-      throw new Error(`Unknown type its javascript class is
+  if (typeString === 'GraphQLNonNull' || typeString === 'GraphQLList' ) {
+    name = getTypeName(type.ofType);
+  }
+  if ( name === undefined && isDefinedType(type)) {
+    // if still can not get name,
+    // this type must be something i dont known ,throw to learn
+    throw new Error(`Unknown type its javascript class is
       [ [${type.constructor.name}] ${type.ofType.constructor.name}]`);
-    }
   }
   return name;
 }
