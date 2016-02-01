@@ -9,7 +9,7 @@
 
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-import { printSchema, printIntrospectionSchema } from '../schemaPrinter';
+import { printSchema, printIntrospectionSchema,printFineSchema } from '../schemaPrinter';
 import {
   GraphQLSchema,
   GraphQLInputObjectType,
@@ -572,5 +572,33 @@ enum __TypeKind {
 }
 `;
     expect(output).to.equal(introspectionSchema);
+  });
+
+
+});
+
+function printFineForTest(schema) {
+  return '\n' + printFineSchema(schema);
+}
+
+function printFineSingleFieldSchema(fieldConfig) {
+  const Root = new GraphQLObjectType({
+    name: 'Root',
+    fields: { singleField: fieldConfig },
+  });
+  return printFineForTest(new GraphQLSchema({ query: Root }));
+}
+
+describe('Type System Fine Printer',()=>{
+  it('Prints String Field', () => {
+    const output = printFineSingleFieldSchema({
+      type: GraphQLString
+    });
+    expect(output).to.equal(`
+type Root {
+  singleField: String
+}
+`
+    );
   });
 });
