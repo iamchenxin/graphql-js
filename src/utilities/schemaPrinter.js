@@ -12,7 +12,7 @@ import invariant from '../jsutils/invariant';
 import isNullish from '../jsutils/isNullish';
 import { astFromValue } from '../utilities/astFromValue';
 import { print } from '../language/printer';
-import type { GraphQLSchema } from '../type/schema';
+import type { GraphQLSchema, } from '../type/schema';
 import type { GraphQLType } from '../type/definition';
 import {
   GraphQLScalarType,
@@ -37,7 +37,6 @@ export function printFineSchema(schema: GraphQLSchema): string {
   const orderedNames = getOrderedNamesBySchema(schema);
   const types = orderedNames.map(orderedName => typeMap[orderedName]);
   return types.map(printType).join('\n\n') + '\n';
-
 }
 
 function isDefinedType(typename: string): boolean {
@@ -153,7 +152,7 @@ function getOrderedNamesBySchema(schema) {
   const definedTypeNames = Object.keys(typeMap).filter(isDefinedType);
 
   const typeNamesMap = arrayToMap(definedTypeNames,99999);
-  const queryMaps = levelTypeNames(rootQuery.name,typeNamesMap,typeMap);
+  const queryMaps = levelTypeNames(rootQuery.name,typeNamesMap,schema);
   let unLeveledNamesMap = queryMaps.unLeveledNamesMap;
   const leveledNamesMap = queryMaps.leveledNamesMap;
   let orderedNames = getOrderedNamesFromMap(leveledNamesMap);
@@ -161,7 +160,7 @@ function getOrderedNamesBySchema(schema) {
   const rootMutation = schema.getMutationType();
   if (rootMutation) {
     const namesMap = levelTypeNames(rootMutation.name,
-      unLeveledNamesMap,typeMap);
+      unLeveledNamesMap,schema);
     const unLeveledMutationNameMaps = namesMap.unLeveledNamesMap;
     const leveledMutationNameMaps = namesMap.leveledNamesMap;
     const orderedMuNames =
@@ -172,28 +171,39 @@ function getOrderedNamesBySchema(schema) {
 
   const theNamesIDontKnown = getOrderedNamesFromMap(unLeveledNamesMap);
   if (theNamesIDontKnown.length > 0) {
-    console.log(`these names are unOrdered ${theNamesIDontKnown},
-    maybe they dont be uesd by other types`);
     orderedNames = [ ...theNamesIDontKnown,...orderedNames ];
   }
   return orderedNames;
 }
 
-function getOrderedNamesFromMap(leveledNamesMap) {
+function getOrderedNamesFromMap(leveledNamesMap:Map):Array<string> {
   const levelToNamesMap = flipMap(leveledNamesMap);
   const nameLevels = Array.from(levelToNamesMap.keys());
   nameLevels.sort((pre,next) => ( next - pre ));
   let orderedNames = [];
   for (const level of nameLevels) {
     const levelNames = levelToNamesMap.get(level);
-    levelNames.sort();// sort the same level names . to get a certainly order.
-    orderedNames = [ ...orderedNames,...levelNames ];
+    if (levelNames) {
+      // sort the same level names . to get a certainly order.
+      levelNames.sort((name1, name2) => name1.localeCompare(name2));
+      orderedNames = orderedNames.concat(levelNames);
+    }else {
+      throw new Error(`printFineSchema.getOrderedNamesFromMap:
+      level[${level}] have no names,it should have`);
+    }
   }
   return orderedNames;
 }
 
+type NamesMap = {
+  leveledNamesMap:Map,
+  unLeveledNamesMap:Map,
+};
+
 // calculate level values for each type names by their reference to each other
-function levelTypeNames(rootName,namesMapToBeLeveled,typeMap) {
+function levelTypeNames(rootName:string,namesMapToBeLeveled:Map,
+                        schema:GraphQLSchema):NamesMap {
+  const typeMap = schema.getTypeMap();
   const unLeveledNamesMap = new Map(namesMapToBeLeveled);
   const leveledNamesMap = new Map();
   // use a map to watch circle ref,Depth-first search
@@ -205,14 +215,14 @@ function levelTypeNames(rootName,namesMapToBeLeveled,typeMap) {
   function _levelTypeNames(thisName,childLevel) {
     const childrenNames = getRefedTypes(typeMap[thisName]);
     for (const childName of childrenNames) {
+      const currentLevel = leveledNamesMap.get(childName);
       if (// meet a circle ref,skip
       circleRef.get(childName) ||
         // this type is not belong to current process,skip
       namesMapToBeLeveled.get(childName) === null ||
         //  if [the level of leveled Name] >= [current level]
         // must skip,level is always up~ no downgrade
-      (leveledNamesMap.has(childName) &&
-      leveledNamesMap.get(childName) >= childLevel)
+      (currentLevel && currentLevel >= childLevel)
       ) {
         continue;
       }
@@ -226,15 +236,13 @@ function levelTypeNames(rootName,namesMapToBeLeveled,typeMap) {
     }
   }
 
-
   return {unLeveledNamesMap,leveledNamesMap};
 }
-
 
 // always return an array ,if get none,just return []
 // a type or interface ref from (args and resolve)
 // of fields and interface of a type
-function getRefedTypes(type) {
+function getRefedTypes(type:any):Array<string> {
   let refedTypeNames = [];
   if (!isDefinedType(type.name) ||
       // if hasn't `getFields` ,it must not be a class GraphQLObjectType
@@ -272,7 +280,8 @@ function getRefedTypes(type) {
 
 }
 
-function arrayToMap(_array,defaultValue) {
+function arrayToMap(_array:Array<string>,
+                    defaultValue:number):Map<string,number> {
   const _map = new Map();
   for (const v of _array) {
     _map.set(v,defaultValue);
@@ -280,11 +289,12 @@ function arrayToMap(_array,defaultValue) {
   return _map;
 }
 
-function flipMap(_srcMap) {
+function flipMap(_srcMap:Map<string,number>):Map<number,Array<string>> {
   const _outMap = new Map();
   for (const [ oldKey,vToKey ] of _srcMap) {
-    if (_outMap.has(vToKey)) {
-      _outMap.get(vToKey).push(oldKey);
+    const subArray = _outMap.get(vToKey);
+    if ( subArray ) {
+      subArray.push(oldKey);
     }else {
       _outMap.set(vToKey,[ oldKey ]);
     }
@@ -292,7 +302,7 @@ function flipMap(_srcMap) {
   return _outMap;
 }
 
-function getTypeName(type) {
+function getTypeName(type:any):string {
   let name = type.name;
   if (name === undefined) {
     const typeString = type.constructor.name;
@@ -309,7 +319,7 @@ function getTypeName(type) {
   return name;
 }
 
-function getDefinedTypeNameByType(TypeObj:any):?string {
+function getDefinedTypeNameByType(TypeObj:GraphQLType):?string {
   const typeName = getTypeName(TypeObj);
   if (isDefinedType(typeName)) {
     return typeName;
