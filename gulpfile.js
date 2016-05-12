@@ -72,6 +72,7 @@ function stdGulpTrans(src, dst) {
 const fs = require('fs');
 function rmdir(pathNames) {
   pathNames.forEach(function (pathName) {
+    if (!fs.existsSync(pathName)) { return; }
     const stat = fs.statSync(pathName);
     if ( stat.isFile()) {
       rmfile(pathName);
