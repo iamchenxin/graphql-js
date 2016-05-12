@@ -18,11 +18,23 @@ gulp.task('common', function () {
 });
 
 gulp.task('clean', function () {
-  return rmdir([ 'dist' ]);
+  return rmdir([
+    'dist' ,
+    'index.js',
+    'index.js.flow',
+    'graphql.js',
+    'graphql.js.flow',
+    'error/',
+    'execution/',
+    'jsutils/',
+    'language/',
+    'type/',
+    'utilities/',
+    'validation/' ] );
 });
 
 gulp.task('flow', function () {
-  return flowType('src', 'dist');
+  return flowType('src', './');
 });
 
 // ........functions .......
