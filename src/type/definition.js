@@ -19,6 +19,12 @@ import type {
   Value,
 } from '../language/ast';
 import type { GraphQLSchema } from './schema';
+export type {
+  OperationDefinition,
+  Field,
+  FragmentDefinition,
+  Value
+};
 
 
 // Predicates
@@ -458,7 +464,7 @@ export type GraphQLTypeResolveFn = (
   value: mixed,
   context: mixed,
   info: GraphQLResolveInfo
-) => ?GraphQLObjectType
+) => ?(GraphQLObjectType|Promise<GraphQLObjectType>)
 
 export type GraphQLIsTypeOfFn = (
   value: mixed,
