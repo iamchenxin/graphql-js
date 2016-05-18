@@ -83,7 +83,7 @@ import type {
 type ExecutionContext = {
   schema: GraphQLSchema;
   fragments: {[key: string]: FragmentDefinition};
-  rootValue: mixed;
+  rootValue: Object;
   contextValue: mixed;
   operation: OperationDefinition;
   variableValues: {[key: string]: mixed};
@@ -111,7 +111,7 @@ type ExecutionResult = {
 export function execute(
   schema: GraphQLSchema,
   documentAST: Document,
-  rootValue?: mixed,
+  rootValue?: Object = {},
   contextValue?: mixed,
   variableValues?: ?{[key: string]: mixed},
   operationName?: ?string
@@ -166,7 +166,7 @@ export function execute(
 function buildExecutionContext(
   schema: GraphQLSchema,
   documentAST: Document,
-  rootValue: mixed,
+  rootValue: Object,
   contextValue: mixed,
   rawVariableValues: ?{[key: string]: mixed},
   operationName: ?string
@@ -226,7 +226,7 @@ function buildExecutionContext(
 function executeOperation(
   exeContext: ExecutionContext,
   operation: OperationDefinition,
-  rootValue: mixed
+  rootValue: Object
 ): Object {
   const type = getOperationRootType(exeContext.schema, operation);
   const fields = collectFields(
@@ -236,7 +236,6 @@ function executeOperation(
     Object.create(null),
     Object.create(null)
   );
-
   if (operation.operation === 'mutation') {
     return executeFieldsSerially(exeContext, type, rootValue, fields);
   }
@@ -286,7 +285,7 @@ function getOperationRootType(
 function executeFieldsSerially(
   exeContext: ExecutionContext,
   parentType: GraphQLObjectType,
-  sourceValue: mixed,
+  sourceValue: Object,
   fields: {[key: string]: Array<Field>}
 ): Promise<Object> {
   return Object.keys(fields).reduce(
@@ -321,7 +320,7 @@ function executeFieldsSerially(
 function executeFields(
   exeContext: ExecutionContext,
   parentType: GraphQLObjectType,
-  sourceValue: mixed,
+  sourceValue: Object,
   fields: {[key: string]: Array<Field>}
 ): Object {
   let containsPromise = false;
@@ -525,7 +524,7 @@ function getFieldEntryKey(node: Field): string {
 function resolveField(
   exeContext: ExecutionContext,
   parentType: GraphQLObjectType,
-  source: mixed,
+  source: Object,
   fieldASTs: Array<Field>
 ): mixed {
   const fieldAST = fieldASTs[0];
@@ -584,7 +583,7 @@ function resolveField(
 // function. Returns the result of resolveFn or the abrupt-return Error object.
 function resolveOrError(
   resolveFn: GraphQLFieldResolveFn,
-  source: mixed,
+  source: Object,
   args: { [key: string]: mixed },
   context: mixed,
   info: GraphQLResolveInfo
@@ -730,8 +729,9 @@ function completeValue(
 
   // If field type is an abstract type, Interface or Union, determine the
   // runtime Object type and complete for that type.
-  if (returnType instanceof GraphQLInterfaceType ||
-      returnType instanceof GraphQLUnionType) {
+  if (result instanceof Object &&
+      (returnType instanceof GraphQLInterfaceType ||
+      returnType instanceof GraphQLUnionType) ) {
     return completeAbstractValue(
       exeContext,
       returnType,
@@ -742,7 +742,7 @@ function completeValue(
   }
 
   // If field type is Object, execute and complete all sub-selections.
-  if (returnType instanceof GraphQLObjectType) {
+  if (returnType instanceof GraphQLObjectType && result instanceof Object) {
     return completeObjectValue(
       exeContext,
       returnType,
@@ -814,7 +814,7 @@ function completeAbstractValue(
   returnType: GraphQLAbstractType,
   fieldASTs: Array<Field>,
   info: GraphQLResolveInfo,
-  result: mixed
+  result: Object
 ): mixed {
   const runtimeType = returnType.resolveType ?
     returnType.resolveType(result, exeContext.contextValue, info) :
@@ -856,7 +856,7 @@ function completeObjectValue(
   returnType: GraphQLObjectType,
   fieldASTs: Array<Field>,
   info: GraphQLResolveInfo,
-  result: mixed
+  result: Object
 ): mixed {
   // If there is an isTypeOf predicate function, call it with the
   // current result. If isTypeOf returns false, then raise an error rather

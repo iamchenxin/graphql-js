@@ -467,8 +467,8 @@ export type GraphQLIsTypeOfFn = (
 ) => boolean
 
 export type GraphQLFieldResolveFn = (
-  source: mixed,
-  args: {[argName: string]: mixed},
+  source: Object,
+  args: Object,
   context: mixed,
   info: GraphQLResolveInfo
 ) => mixed
@@ -480,7 +480,7 @@ export type GraphQLResolveInfo = {
   parentType: GraphQLCompositeType,
   schema: GraphQLSchema,
   fragments: { [fragmentName: string]: FragmentDefinition },
-  rootValue: mixed,
+  rootValue: Object,
   operation: OperationDefinition,
   variableValues: { [variableName: string]: mixed },
 }
