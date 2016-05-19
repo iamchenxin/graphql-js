@@ -12,7 +12,7 @@ import invariant from '../jsutils/invariant';
 import isNullish from '../jsutils/isNullish';
 import { astFromValue } from '../utilities/astFromValue';
 import { print } from '../language/printer';
-import type { GraphQLSchema, } from '../type/schema';
+import type { GraphQLSchema } from '../type/schema';
 import type { GraphQLType } from '../type/definition';
 import {
   GraphQLScalarType,
@@ -151,32 +151,37 @@ function getOrderedNamesBySchema(schema) {
   const rootQuery = schema.getQueryType();
   const definedTypeNames = Object.keys(typeMap).filter(isDefinedType);
 
+  // use a big number 999999 to save some condition operator ~_~
+  // todo should modify the magic 999999
   const typeNamesMap = arrayToMap(definedTypeNames,99999);
+  // give each type used by 'Query' a level number
   const queryMaps = levelTypeNames(rootQuery.name,typeNamesMap,schema);
   let unLeveledNamesMap = queryMaps.unLeveledNamesMap;
   const leveledNamesMap = queryMaps.leveledNamesMap;
-  let orderedNames = getOrderedNamesFromMap(leveledNamesMap);
+  let orderedNames = flatNamesMapToArray(leveledNamesMap);
 
   const rootMutation = schema.getMutationType();
   if (rootMutation) {
-    const namesMap = levelTypeNames(rootMutation.name,
+    // give level number to the rest unLeveled type
+    // which used by Mutations
+    const restNamesMap = levelTypeNames(rootMutation.name,
       unLeveledNamesMap,schema);
-    const unLeveledMutationNameMaps = namesMap.unLeveledNamesMap;
-    const leveledMutationNameMaps = namesMap.leveledNamesMap;
-    const orderedMuNames =
-      getOrderedNamesFromMap(leveledMutationNameMaps);
-    orderedNames = [ ...orderedNames,...orderedMuNames ];
-    unLeveledNamesMap = unLeveledMutationNameMaps;
+    const orderedMutations =
+      flatNamesMapToArray(restNamesMap.leveledNamesMap);
+
+    orderedNames = [ ...orderedNames,...orderedMutations ];
+    unLeveledNamesMap = restNamesMap.unLeveledNamesMap;
   }
 
-  const theNamesIDontKnown = getOrderedNamesFromMap(unLeveledNamesMap);
+  // todo throw a error .. should have none unknown type
+  const theNamesIDontKnown = flatNamesMapToArray(unLeveledNamesMap);
   if (theNamesIDontKnown.length > 0) {
     orderedNames = [ ...theNamesIDontKnown,...orderedNames ];
   }
   return orderedNames;
 }
 
-function getOrderedNamesFromMap(leveledNamesMap:Map):Array<string> {
+function flatNamesMapToArray(leveledNamesMap:Map):Array<string> {
   const levelToNamesMap = flipMap(leveledNamesMap);
   const nameLevels = Array.from(levelToNamesMap.keys());
   nameLevels.sort((pre,next) => ( next - pre ));
@@ -219,7 +224,7 @@ function levelTypeNames(rootName:string,namesMapToBeLeveled:Map,
       if (// meet a circle ref,skip
       circleRef.get(childName) ||
         // this type is not belong to current process,skip
-      namesMapToBeLeveled.get(childName) === null ||
+      namesMapToBeLeveled.get(childName) === undefined ||
         //  if [the level of leveled Name] >= [current level]
         // must skip,level is always up~ no downgrade
       (currentLevel && currentLevel >= childLevel)
@@ -240,15 +245,13 @@ function levelTypeNames(rootName:string,namesMapToBeLeveled:Map,
 }
 
 // always return an array ,if get none,just return []
-// a type or interface ref from (args and resolve)
-// of fields and interface of a type
+// three sources of reference from a type.
+// field itself, args of a fields,interface
 function getRefedTypes(type:any):Array<string> {
   let refedTypeNames = [];
   if (!isDefinedType(type.name) ||
-      // if hasn't `getFields` ,it must not be a class GraphQLObjectType
-      // or GraphQLInterfaceTyp as now,the only types will ref
-      // another definedType inside are GraphQLObjectType and
-      // GraphQLInterfaceType ,GraphQLEnumType has no fields
+      // as i known ~_~,if there is no Fields
+      // this type can not ref other types inside
     !(type.getFields instanceof Function)
   ) {
     return refedTypeNames;
@@ -260,17 +263,17 @@ function getRefedTypes(type:any):Array<string> {
     .filter(field => isDefinedType(getTypeName(field.type) ) )
     .map(field => {
       refedTypeNames = refedTypeNames.concat(
-        // 1 get type name from args of a field
+        // 1. get type name from args of a field
         // in javascript, can not use instanceof to check a String type!
         // must use typeof!
         field.args.map(arg => getDefinedTypeNameByType(arg.type))
           .filter(value => (typeof value === 'string')) ,
-        // 2 get type name from field itself
+        // 2. get type name from field itself
         getDefinedTypeNameByType(field.type) || []
       );
     });
 
-  // 3 get type name from interfaces of the type itself
+  // 3. get type name from interfaces
   if (type.getInterfaces instanceof Function) {
     for (const interfaceType of type.getInterfaces()) {
       refedTypeNames.push(interfaceType.name);

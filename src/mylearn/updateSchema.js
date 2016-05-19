@@ -29,6 +29,6 @@ function updateSchema(schemaPath,dst){
 
 }
 
-updateSchema(path.resolve(__dirname,'./starWarsSchema.js'),path.resolve(__dirname));
+updateSchema(path.resolve(__dirname,'./webSchema.js'),path.resolve(__dirname));
 
 module.exports = updateSchema;
