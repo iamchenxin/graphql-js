@@ -1036,3 +1036,10 @@ export class GraphQLNonNull<T: GraphQLNullableType> {
     return this.ofType.toString() + '!';
   }
 }
+
+export type {
+  OperationDefinition,
+  Field,
+  FragmentDefinition,
+  Value
+};
