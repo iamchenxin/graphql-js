@@ -715,9 +715,13 @@ describe('Type System Printer [printFineSchema]:',() => {
     const output = printFineSingleFieldSchema({
       type: GraphQLString
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -727,9 +731,13 @@ type Root {
     const output = printFineSingleFieldSchema({
       type: listOf(GraphQLString)
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: [String]
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -739,9 +747,13 @@ type Root {
     const output = printFineSingleFieldSchema({
       type: nonNull(GraphQLString)
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: String!
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -751,9 +763,13 @@ type Root {
     const output = printFineSingleFieldSchema({
       type: nonNull(listOf(GraphQLString))
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: [String]!
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -763,9 +779,13 @@ type Root {
     const output = printFineSingleFieldSchema({
       type: listOf(nonNull(GraphQLString))
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: [String!]
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -775,9 +795,13 @@ type Root {
     const output = printFineSingleFieldSchema({
       type: nonNull(listOf(nonNull(GraphQLString)))
     });
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField: [String!]!
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -796,13 +820,17 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Foo {
   str: String
 }
 
 type Root {
   foo: Foo
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -815,9 +843,13 @@ type Root {
         args: { argOne: { type: GraphQLInt } },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -830,9 +862,13 @@ type Root {
         args: { argOne: { type: GraphQLInt, defaultValue: 2 } },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int = 2): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -845,9 +881,13 @@ type Root {
         args: { argOne: { type: nonNull(GraphQLInt) } },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int!): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -863,9 +903,13 @@ type Root {
         },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int, argTwo: String): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -882,9 +926,13 @@ type Root {
         },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -901,9 +949,13 @@ type Root {
         },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -920,9 +972,13 @@ type Root {
         },
       }
     );
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Root {
   singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -950,7 +1006,7 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 interface Foo {
   str: String
 }
@@ -961,6 +1017,10 @@ type Bar implements Foo {
 
 type Root {
   bar: Bar
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -995,7 +1055,7 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 interface Baaz {
   int: Int
 }
@@ -1011,6 +1071,10 @@ type Bar implements Foo, Baaz {
 
 type Root {
   bar: Bar
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -1053,7 +1117,7 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 type Bar {
   str: String
 }
@@ -1069,6 +1133,10 @@ union SingleUnion = Foo
 type Root {
   single: SingleUnion
   multiple: MultipleUnion
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -1094,13 +1162,17 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 input InputType {
   int: Int
 }
 
 type Root {
   str(argOne: InputType): String
+}
+
+schema {
+  query: Root
 }
 `);
   });
@@ -1122,11 +1194,15 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 scalar Odd
 
 type Root {
   odd: Odd
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -1151,7 +1227,7 @@ type Root {
 
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 enum RGB {
   RED
   GREEN
@@ -1160,6 +1236,10 @@ enum RGB {
 
 type Root {
   rgb: RGB
+}
+
+schema {
+  query: Root
 }
 `);
   });
@@ -1223,7 +1303,7 @@ type Root {
     });
     const Schema = new GraphQLSchema({ query: Root });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 interface Node {
   id: String
   best: Dog
@@ -1256,6 +1336,10 @@ type Dog implements Node {
 type Root {
   dog: Dog
   mouse: Mouse
+}
+
+schema {
+  query: Root
 }
 `
     );
@@ -1406,7 +1490,7 @@ type Root {
     const Schema = new GraphQLSchema({
       query: queryType ,mutation: mutationType });
     const output = printFineForTest(Schema);
-    expect(output).to.equal(`
+    expect(output).to.equal(`\n\n
 interface Node {
   id: String!
 }
@@ -1482,6 +1566,11 @@ type NewPostPayload {
 
 type Mutation {
   newPost(input: NewPostInput!): NewPostPayload
+}
+
+schema {
+  query: Query
+  mutation: Mutation
 }
 `
     );

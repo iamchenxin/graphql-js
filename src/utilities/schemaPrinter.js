@@ -205,8 +205,8 @@ function printDirective(directive) {
 
 function printFineSchema(
   schema: GraphQLSchema,
-  directiveFilter: (type: string) => boolean = (n => !isSpecDirective(n)),
-  ): string {
+  directiveFilter: (type: string) => boolean = (n => !isSpecDirective(n))
+): string {
   const directives = schema.getDirectives()
   .filter(directive => directiveFilter(directive.name));
   const typeMap = schema.getTypeMap();
@@ -264,7 +264,7 @@ function flatNamesMapToArray(leveledNamesMap:Map):Array<string> {
       // sort the same level names . to get a certainly order.
       levelNames.sort((name1, name2) => name1.localeCompare(name2));
       orderedNames = orderedNames.concat(levelNames);
-    }else {
+    } else {
       throw new Error(`printFineSchema.getOrderedNamesFromMap:
       level[${level}] have no names,it should have`);
     }
@@ -370,7 +370,7 @@ function flipMap(_srcMap:Map<string,number>):Map<number,Array<string>> {
     const subArray = _outMap.get(vToKey);
     if ( subArray ) {
       subArray.push(oldKey);
-    }else {
+    } else {
       _outMap.set(vToKey,[ oldKey ]);
     }
   }
