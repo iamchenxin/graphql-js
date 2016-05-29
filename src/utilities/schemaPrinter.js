@@ -25,9 +25,9 @@ import {
 import { DEFAULT_DEPRECATION_REASON } from '../type/directives';
 
 
-// type printStyle = 'alphabet' | 'hierarchy';
+type printStyle = 'alphabet' | 'hierarchy';
 export function printSchema(
-  schema: GraphQLSchema,style: string = 'alphabet'): string {
+  schema: GraphQLSchema,style: printStyle = 'alphabet'): string {
   switch (style) {
     case 'hierarchy':
       return printFineSchema(schema, n => !isSpecDirective(n));
