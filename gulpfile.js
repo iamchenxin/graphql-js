@@ -5,16 +5,12 @@ const babel = require('gulp-babel');
 const sourcemaps = require('gulp-sourcemaps');
 const rename = require('gulp-rename');
 const path = require('path');
-const fbjsConfigure = require('babel-preset-fbjs/configure');
+// const fbjsConfigure = require('babel-preset-fbjs/configure');
 // const gutil =require('gulp-util');
 
 
-gulp.task('lib', function () {
-  return stdGulpTrans('src', 'lib');
-});
-
-gulp.task('common', function () {
-  return stdGulpTrans('src/common', 'dst/common');
+gulp.task('lib',[ 'flow' ], function () {
+  return stdGulpTrans('src', './');
 });
 
 gulp.task('clean', function () {
@@ -22,8 +18,10 @@ gulp.task('clean', function () {
     'dist' ,
     'index.js',
     'index.js.flow',
+    'index.js.map',
     'graphql.js',
     'graphql.js.flow',
+    'graphql.js.map',
     'error/',
     'execution/',
     'jsutils/',
@@ -55,13 +53,9 @@ function stdGulpTrans(src, dst) {
     .src(srcPath)
     .pipe(sourcemaps.init())
     .pipe(babel({
-      presets: [
-        fbjsConfigure({
-          autoImport: false,
-          target: 'js',
-        }),
-      ],
-    }))
+      presets: [ 'es2015', 'stage-0' ],
+      plugins: [ 'transform-flow-strip-types' ]
+    }) )
     .pipe(sourcemaps.write('.', {
       includeContent: true, sourceRoot, debug: true,
     }))
