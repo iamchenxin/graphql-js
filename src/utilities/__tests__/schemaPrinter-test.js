@@ -1670,13 +1670,7 @@ type NewPostPayload {
 
 type Mutation {
   newPost(input: NewPostInput!): NewPostPayload
-}
-
-schema {
-  query: Query
-  mutation: Mutation
-}
-`
+}\n\n\n`
     );
   });
 });
